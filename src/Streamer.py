@@ -4,18 +4,7 @@ Created on 2014年2月7日
 
 @author: fengjian
 '''
-
-import time
-import os
-import threading
-import TsParser
-
-class configLoader():
-    
-    EXT_X_VERSION = 3
-    EXT_X_TARGETDURATION = 10
-    HTTPROOT = "../httproot"
-    VODROOT = "../VOD"
+import Basic
 
 class Streamer():
     '''
@@ -29,7 +18,8 @@ class Streamer():
         '''
         self.__buffer = ""
         self.ENDSEGMENTFILE = ".old"
-        self.CFG = configLoader()
+        self.CFG = Basic.Basci()
+        self.CFG.hls()
         self.HLSROOTPATH = self.CFG.HTTPROOT
 
     def getVODRoot(self):
@@ -39,11 +29,11 @@ class Streamer():
     def isNewStream(self, name):
 
         self.HLSROOTPATH = "%s/%s" % (self.CFG.HTTPROOT, name)
-        if not os.path.exists(self.HLSROOTPATH):
-            os.makedirs(self.HLSROOTPATH)
+        if not self.CFG.os.path.exists(self.HLSROOTPATH):
+            self.CFG.os.makedirs(self.HLSROOTPATH)
             return 1
         else:
-            if os.path.exists("%s/%s" % (self.HLSROOTPATH, self.ENDSEGMENTFILE)):
+            if self.CFG.os.path.exists("%s/%s" % (self.HLSROOTPATH, self.ENDSEGMENTFILE)):
                 return 0
             else:
                 return 1
@@ -52,7 +42,7 @@ class Streamer():
 
         try:
             segment_file = None
-            if os.path.isfile("%s/%s" %(self.HLSROOTPATH, name)):
+            if self.CFG.os.path.isfile("%s/%s" %(self.HLSROOTPATH, name)):
                 return 1
             segment_file = open("%s/%s" %(self.HLSROOTPATH, name), "w")
             segment_file.write(content)
@@ -88,7 +78,7 @@ class Streamer():
         
         try:
             m3u8_file = None
-            if os.path.isfile("%s/%s" % (self.HLSROOTPATH, name)):
+            if self.CFG.os.path.isfile("%s/%s" % (self.HLSROOTPATH, name)):
                 return 1
             m3u8_file = open("%s/%s" % (self.HLSROOTPATH, name), "w")
             m3u8_file.write(self.__buffer)
@@ -118,10 +108,11 @@ class VOD():
     
     def __init__(self):
 
-        self.tsParser_object = TsParser.TSParser()
+        self.BASIC = Basic.Basci()
+        self.tsParser_object = self.BASIC.tsparser
 
     def vod2hls(self, filename):
-        print time.ctime(time.time())
+        print self.BASIC.time.ctime(self.BASIC.time.time())
         segpackage = 0
         timer = 0
         count = 0
@@ -129,7 +120,7 @@ class VOD():
         seg_number = 0
         vod_length = list()
         STREAMER = Streamer()
-        if not STREAMER.isNewStream(os.path.split(filename)[-1].split(".")[0]):
+        if not STREAMER.isNewStream(self.BASIC.os.path.split(filename)[-1].split(".")[0]):
             return
         STREAMER.getM3U()
         STREAMER.getVERSION()
@@ -161,12 +152,12 @@ class VOD():
         #print vod_length
         for length in range(len(vod_length)):
             seg = length + 1
-            genseg = threading.Thread(target=STREAMER.genSeg,
+            genseg = self.BASIC.threading.Thread(target=STREAMER.genSeg,
                                       args=("%s.ts" % seg, file_object.read(vod_length[length])))
             genseg.start()
         file_object.close()
         STREAMER.genFinish()
-        print time.ctime(time.time())
+        print self.BASIC.time.ctime(self.BASIC.time.time())
     
     def openVOD(self, name):
         try:
@@ -177,11 +168,11 @@ class VOD():
 
     def start(self):
 
-        CFG = configLoader()
-        for i in os.listdir(CFG.VODROOT):
-            filepath = "%s/%s"% (CFG.VODROOT, i)
+        self.BASIC.hls()
+        for i in self.BASIC.os.listdir(self.BASIC.VODROOT):
+            filepath = "%s/%s"% (self.BASIC.VODROOT, i)
             #print filepath
-            vod2hls = threading.Thread(target=self.vod2hls,
+            vod2hls = self.BASIC.threading.Thread(target=self.vod2hls,
                              args=(filepath,))
             vod2hls.start()
 
