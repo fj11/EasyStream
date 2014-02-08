@@ -1,0 +1,12 @@
+
+*.pyc
+
+*.ts
+
+*.m3u8
+
+VOD/xaa
+
+httproot/.old
+
+httproot/xaa/.old
