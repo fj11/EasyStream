@@ -79,7 +79,7 @@ class TSParser(object):
 		return self.__clock
 
 if __name__ == "__main__":
-	VOD = "/Users/fengjian/Dev/EasyStream/VOD/xaa"
+	VOD = "../VOD/xaa"
 	TS = TSParser()
 	file_reader = open(VOD, "rb")
 	timer = 0
