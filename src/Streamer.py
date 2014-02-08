@@ -17,26 +17,33 @@ class configLoader():
     HTTPROOT = "../httproot"
     VODROOT = "../VOD"
 
-class Streamer(configLoader):
+class Streamer():
     '''
     classdocs
     '''
+    
     
     def __init__(self):
         '''
         Constructor
         '''
         self.__buffer = ""
-        self.HLSROOTPATH = self.HTTPROOT
+        self.ENDSEGMENTFILE = ".old"
+        self.CFG = configLoader()
+        self.HLSROOTPATH = self.CFG.HTTPROOT
+
+    def getVODRoot(self):
+        
+        return self.HTTPROOT
 
     def isNewStream(self, name):
 
-        self.HLSROOTPATH = "%s/%s" % (self.HTTPROOT, name)
+        self.HLSROOTPATH = "%s/%s" % (self.CFG.HTTPROOT, name)
         if not os.path.exists(self.HLSROOTPATH):
             os.makedirs(self.HLSROOTPATH)
             return 1
         else:
-            if os.path.exists("%s/.old" % self.HLSROOTPATH):
+            if os.path.exists("%s/%s" % (self.HLSROOTPATH, self.ENDSEGMENTFILE)):
                 return 0
             else:
                 return 1
@@ -59,11 +66,11 @@ class Streamer(configLoader):
             
     def getVERSION(self):
         
-        self.__buffer += "#EXT-X-VERSION:%d\n" % self.EXT_X_VERSION
+        self.__buffer += "#EXT-X-VERSION:%d\n" % self.CFG.EXT_X_VERSION
         
     def getTARGETDURATION(self):
         
-        self.__buffer += "#EXT-X-TARGETDURATION:%d\n" % self.EXT_X_TARGETDURATION
+        self.__buffer += "#EXT-X-TARGETDURATION:%d\n" % self.CFG.EXT_X_TARGETDURATION
     
     def getM3U(self):
 
@@ -95,9 +102,16 @@ class Streamer(configLoader):
 
     def genFinish(self):
 
-        seged = open("%s/.old" % self.HLSROOTPATH, "w")
-        seged.write("")
-        seged.close()
+        try:
+            seged = None
+            seged = open("%s/%s" % (self.HLSROOTPATH, self.ENDSEGMENTFILE), "w")
+            seged.write("")
+            seged.close()
+        except IOError, e:
+            print e
+        finally:
+            if seged:
+                seged.close()
 
 
 class VOD():
@@ -163,9 +177,9 @@ class VOD():
 
     def start(self):
 
-        VODROOT = "../VOD"
-        for i in os.listdir(VODROOT):
-            filepath = "%s/%s"% (VODROOT, i)
+        CFG = configLoader()
+        for i in os.listdir(CFG.VODROOT):
+            filepath = "%s/%s"% (CFG.VODROOT, i)
             #print filepath
             vod2hls = threading.Thread(target=self.vod2hls,
                              args=(filepath,))
