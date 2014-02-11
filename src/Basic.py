@@ -7,6 +7,7 @@ Created on 2014年2月8日
 import logging
 import TsParser
 import threading
+import socket
 import time
 import os
 
@@ -22,6 +23,7 @@ class Basci(object):
         '''
         self.time = time
         self.os = os
+        self.socket = socket
         self.tsparser = TsParser.TSParser()
         self.threading = threading
         
