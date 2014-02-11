@@ -57,18 +57,30 @@ class Streamer():
     def getVERSION(self):
         
         self.__buffer += "#EXT-X-VERSION:%d\n" % self.CFG.EXT_X_VERSION
-        
+       
+    def getPLAYLISTTYPE(self, playlist_type):
+
+        self.__buffer += "#EXT-X-PLAYLIST-TYPE:%s\n" % playlist_type.upper()
+ 
     def getTARGETDURATION(self):
         
         self.__buffer += "#EXT-X-TARGETDURATION:%d\n" % self.CFG.EXT_X_TARGETDURATION
-    
+   
+    def getMEDIASEQUENCE(self, number):
+
+        self.__buffer += "#EXT-X-MEDIA-SEQUENCE:%s\n" % number
+
+    def getKEY(self, key_type="", method="NONE"):
+
+        self.__buffer += "#EXT-X-KEY%s:METHOD=%s\n" % (key_type, method)
+ 
     def getM3U(self):
 
         self.__buffer += "#EXTM3U\n"
     
     def getINF(self, dur, segurl):
         
-        self.__buffer += "#EXTINF:%.1f\n%s\n" % (dur, segurl)
+        self.__buffer += "#EXTINF:%.1f,\n%s\n" % (dur, segurl)
     
     def getENDLIST(self):
         
@@ -113,11 +125,12 @@ class VOD():
 
     def vod2hls(self, filename):
         print self.BASIC.time.ctime(self.BASIC.time.time())
-        segpackage = 0
+        start_time = 0
+        end_time = 0
         timer = 0
-        count = 0
-        timer_end = 0
-        seg_number = 0
+        duration = 0
+        segpackage = 0
+        seg_number = 1
         vod_length = list()
         STREAMER = Streamer()
         if not STREAMER.isNewStream(self.BASIC.os.path.split(filename)[-1].split(".")[0]):
@@ -125,6 +138,9 @@ class VOD():
         STREAMER.getM3U()
         STREAMER.getVERSION()
         STREAMER.getTARGETDURATION()
+        STREAMER.getPLAYLISTTYPE("vod")
+        STREAMER.getMEDIASEQUENCE("1")
+        STREAMER.getKEY()
         file_object = self.openVOD("%s" % (filename))
         sec = file_object.read(188)
         while len(sec) == 188:
@@ -132,21 +148,21 @@ class VOD():
             #print 1111
             self.tsParser_object.get_length(sec)
             timer = self.tsParser_object.get_clock()
-            count = int(timer)/10
-            #print time.ctime(time.time())
-            if count > seg_number:
-                seg_number = count
-                dur = timer - timer_end
-                timer_end = timer
+            if timer and not start_time:
+                start_time = timer
+            #print timer
+            if timer - start_time > 10:
+                duration = timer - start_time
+                start_time = timer
                 vod_length.append(segpackage * 188)
                 segpackage = 0
-                STREAMER.getINF(float(dur), "%d.ts" % seg_number)
+                STREAMER.getINF(float(duration), "%s.ts" % seg_number)
+                seg_number += 1
             sec = file_object.read(188)
-        seg_number += 1
         vod_length.append(segpackage * 188)
-        STREAMER.getINF(float(timer-timer_end), "%d.ts" % (seg_number))
+        STREAMER.getINF(float(timer - start_time), "%s.ts" % (seg_number))
         STREAMER.getENDLIST()
-        if not STREAMER.genM3U8("%s.m3u8" % "vod"):
+        if not STREAMER.genM3U8("%s.m3u8" % "playlist"):
             return
         file_object.seek(0)
         #print vod_length

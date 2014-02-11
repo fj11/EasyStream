@@ -55,4 +55,4 @@ class Basci(object):
         self.EXT_X_VERSION = 3
         self.EXT_X_TARGETDURATION = 10
         self.HTTPROOT = "../httproot"
-        self.VODROOT = "../VOD"
+        self.VODROOT = "../vod"
