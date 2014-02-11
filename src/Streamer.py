@@ -6,6 +6,8 @@ Created on 2014年2月7日
 '''
 import Basic
 
+BASIC = Basic.Basic()
+
 class Streamer():
     '''
     classdocs
@@ -18,22 +20,23 @@ class Streamer():
         '''
         self.__buffer = ""
         self.ENDSEGMENTFILE = ".old"
-        self.CFG = Basic.Basci()
-        self.CFG.hls()
-        self.HLSROOTPATH = self.CFG.HTTPROOT
+        BASIC = Basic.Basic()
+        BASIC.hls()
+        self.HLSROOTPATH = BASIC.HTTPROOT
 
     def getVODRoot(self):
         
         return self.HTTPROOT
 
-    def isNewStream(self, name):
+    def isNewStream(self, name, stream_type="vod"):
 
-        self.HLSROOTPATH = "%s/%s" % (self.CFG.HTTPROOT, name)
-        if not self.CFG.os.path.exists(self.HLSROOTPATH):
-            self.CFG.os.makedirs(self.HLSROOTPATH)
+        self.HLSROOTPATH = "%s/%s" % (BASIC.HTTPROOT, name)
+        if not BASIC.os.path.exists(self.HLSROOTPATH):
+            BASIC.os.makedirs(self.HLSROOTPATH)
+        if stream_type == "live":
             return 1
         else:
-            if self.CFG.os.path.exists("%s/%s" % (self.HLSROOTPATH, self.ENDSEGMENTFILE)):
+            if BASIC.os.path.exists("%s/%s" % (self.HLSROOTPATH, self.ENDSEGMENTFILE)):
                 return 0
             else:
                 return 1
@@ -42,7 +45,7 @@ class Streamer():
 
         try:
             segment_file = None
-            if self.CFG.os.path.isfile("%s/%s" %(self.HLSROOTPATH, name)):
+            if BASIC.os.path.isfile("%s/%s" %(self.HLSROOTPATH, name)):
                 return 1
             segment_file = open("%s/%s" %(self.HLSROOTPATH, name), "w")
             segment_file.write(content)
@@ -53,10 +56,15 @@ class Streamer():
         finally:
             if segment_file:
                 segment_file.close()
-            
+
+    def openSeg(self, name):
+
+        segment_file = open("%s/%s" %(self.HLSROOTPATH, name), "w")
+        return segment_file
+
     def getVERSION(self):
         
-        self.__buffer += "#EXT-X-VERSION:%d\n" % self.CFG.EXT_X_VERSION
+        self.__buffer += "#EXT-X-VERSION:%d\n" % BASIC.EXT_X_VERSION
        
     def getPLAYLISTTYPE(self, playlist_type):
 
@@ -64,7 +72,7 @@ class Streamer():
  
     def getTARGETDURATION(self):
         
-        self.__buffer += "#EXT-X-TARGETDURATION:%d\n" % self.CFG.EXT_X_TARGETDURATION
+        self.__buffer += "#EXT-X-TARGETDURATION:%d\n" % BASIC.EXT_X_TARGETDURATION
    
     def getMEDIASEQUENCE(self, number):
 
@@ -90,8 +98,6 @@ class Streamer():
         
         try:
             m3u8_file = None
-            if self.CFG.os.path.isfile("%s/%s" % (self.HLSROOTPATH, name)):
-                return 1
             m3u8_file = open("%s/%s" % (self.HLSROOTPATH, name), "w")
             m3u8_file.write(self.__buffer)
             return 1
@@ -120,11 +126,11 @@ class VOD():
     
     def __init__(self):
 
-        self.BASIC = Basic.Basci()
-        self.tsParser_object = self.BASIC.tsparser
+        BASIC = Basic.Basic()
+        self.tsParser_object = BASIC.tsparser
 
     def vod2hls(self, filename):
-        print self.BASIC.time.ctime(self.BASIC.time.time())
+        print BASIC.time.ctime(BASIC.time.time())
         start_time = 0
         end_time = 0
         timer = 0
@@ -133,7 +139,7 @@ class VOD():
         seg_number = 1
         vod_length = list()
         STREAMER = Streamer()
-        if not STREAMER.isNewStream(self.BASIC.os.path.split(filename)[-1].split(".")[0]):
+        if not STREAMER.isNewStream(BASIC.os.path.split(filename)[-1].split(".")[0]):
             return
         STREAMER.getM3U()
         STREAMER.getVERSION()
@@ -168,12 +174,12 @@ class VOD():
         #print vod_length
         for length in range(len(vod_length)):
             seg = length + 1
-            genseg = self.BASIC.threading.Thread(target=STREAMER.genSeg,
+            genseg = BASIC.threading.Thread(target=STREAMER.genSeg,
                                       args=("%s.ts" % seg, file_object.read(vod_length[length])))
             genseg.start()
         file_object.close()
         STREAMER.genFinish()
-        print self.BASIC.time.ctime(self.BASIC.time.time())
+        print BASIC.time.ctime(BASIC.time.time())
     
     def openVOD(self, name):
         try:
@@ -184,18 +190,96 @@ class VOD():
 
     def start(self):
 
-        self.BASIC.hls()
-        for i in self.BASIC.os.listdir(self.BASIC.VODROOT):
-            filepath = "%s/%s"% (self.BASIC.VODROOT, i)
+        BASIC.hls()
+        for i in BASIC.os.listdir(BASIC.VODROOT):
+            filepath = "%s/%s"% (BASIC.VODROOT, i)
             #print filepath
-            vod2hls = self.BASIC.threading.Thread(target=self.vod2hls,
+            vod2hls = BASIC.threading.Thread(target=self.vod2hls,
                              args=(filepath,))
             vod2hls.start()
 
+class LIVE():
 
+    def __init__(self):
+
+        self.STREAMER = Streamer()
+
+    def reciveUnicastUDP(self, streamname, port):
+
+        BASIC.live()
+        BASIC.hls()
+        udp_unicast_server = BASIC.socketserver.UDPUnicastServer()
+        udp_unicast_server.bind(("", port))
+        udp_unicast_server.settimeout(60)
+
+        seg_info_list = list()
+        start_time = 0
+        last_time = 0
+        end_time = 0
+        timer = 0
+        duration = 0
+        seg_number = 1
+        save_segment = True
+
+        self.STREAMER.isNewStream(streamname.split("/")[-1].split(".")[0], "live")
+        try: 
+            message, address = udp_unicast_server.recvfrom(188)
+            while len(message) == 188:
+                if save_segment:
+                    print "creating %s.ts" % seg_number
+                    segment_file = self.STREAMER.openSeg("%s.ts" % seg_number)
+                    save_segment = False
+                segment_file.write(message)
+                BASIC.tsparser.get_length(message)
+                timer = BASIC.tsparser.get_clock()
+                if timer and not last_time and not start_time:
+                    last_time = timer
+                    start_time = timer
+                if abs(timer - last_time) > 10:
+                    timer = last_time
+                else:
+                    last_time = timer
+                if timer - start_time > 10:
+                    segment_file.close()
+                    save_segment = True
+                    if len(seg_info_list) == BASIC.SEGMENT_NUMBER:
+                        del seg_info_list[0]
+                    duration = timer - start_time
+                    start_time = timer
+                    seg_info_list.append((duration, "%s.ts" % seg_number))
+                    if len(seg_info_list) == BASIC.SEGMENT_NUMBER:
+                        self.genM3U8(streamname, seg_info_list)
+                    seg_number += 1
+                message, address = udp_unicast_server.recvfrom(188)
+        except BASIC.socket.timeout, e:
+            print e
+        except Exception, e:
+            print e
+        finally:
+            self.genM3U8(streamname, seg_info_list, end_list=1)
+                
+    def genM3U8(self, streamname, seg_info_list, end_list=0):
+
+        self.STREAMER.getM3U()
+        self.STREAMER.getVERSION()
+        self.STREAMER.getTARGETDURATION()
+        self.STREAMER.getPLAYLISTTYPE("live")
+        self.STREAMER.getMEDIASEQUENCE("1")
+        self.STREAMER.getKEY()
+        for i in seg_info_list:
+            self.STREAMER.getINF(float(i[0]), i[1])
+        if end_list:
+            self.STREAMER.getENDLIST()
+        if not self.STREAMER.genM3U8("%s.m3u8" % "playlist"):
+            return
+   
+    
+ 
 if __name__ == "__main__":
 
-    VODStreamer = VOD()
-    VODStreamer.start()
+    #VODStreamer = VOD()
+    #VODStreamer.start()
+    LIVEStreamer = LIVE()
+    LIVEStreamer.reciveUnicastUDP("fe.ts", 12345)
 
 

@@ -11,7 +11,7 @@ import socket
 import time
 import os
 
-class Basci(object):
+class Basic(object):
     '''
     classdocs
     '''
@@ -26,7 +26,6 @@ class Basci(object):
         self.socket = socket
         self.tsparser = TsParser.TSParser()
         self.threading = threading
-        
         
     def log(self):
         
@@ -51,9 +50,14 @@ class Basci(object):
         logger.warn("warn message")  
         logger.error("error message")  
         logger.critical("critical message") 
+
+    def live(self):
+        import SocketServer
+        self.socketserver = SocketServer.SocketServer()
         
     def hls(self):
-        
+       
+        self.SEGMENT_NUMBER = 3 
         self.EXT_X_VERSION = 3
         self.EXT_X_TARGETDURATION = 10
         self.HTTPROOT = "../httproot"
