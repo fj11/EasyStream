@@ -15,4 +15,5 @@ Need to install http servers as below
 * http://httpd.apache.org
 * http://www.lighttpd.net
 * http://nginx.org
+
 After install http server. please create a symbolic link, link "/httproot/" folder to HTTP root folder. All of segments generated into /httproot/ folder
