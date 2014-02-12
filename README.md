@@ -1,8 +1,7 @@
 EasyStream
 ==========
 
-Easy Stream is a free, open source, lightweight streaming service
-
+Easy Stream is a free, open source, lightweight streaming service.
 Created by FengJian(Arthur Feng)
 
 Libraries
