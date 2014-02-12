@@ -3,8 +3,9 @@ EasyStream
 
 Easy Stream is a free, open source, lightweight streaming service
 Created by FengJian(Arthur Feng)
----------------------------
 
+Libraries
+---------------------------
 This library will support all kinds of streaming service.
 Support Now:
 * HLS streaming service for iphone and ipad.
