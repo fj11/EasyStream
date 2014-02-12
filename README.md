@@ -6,7 +6,7 @@ Created by FengJian(Arthur Feng)
 
 Libraries
 ---------------------------
-This library will support all kinds of streaming service.
+All libraries are under /src/, they support all kinds of streaming service.
 Support Now:
 * HLS streaming service for iphone and ipad.
 
