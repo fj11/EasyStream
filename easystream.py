@@ -11,6 +11,7 @@ if __name__ == "__main__":
     options, args = parser.parse_args()
     if options.vod:
         hls_vod = HLStreamer.VOD()
+        hls_vod.start()
     if options.url:
         hls_live = HLStreamer.LIVE()
         hls_live.reciveUnicastUDP(options.url)

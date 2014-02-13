@@ -21,36 +21,33 @@ class TSParser(object):
 		self.clock_end = 0
 		self.__clock = 0
 
+        def isTsPackage(self, pac):
+
+                if len(pac) != self.TS_PACKET_SIZE:
+			return 0
+                if ord(pac[0]) != self.TS_SYNC_BYTE:
+                        return 0
+		return 1
+		
 	def get_length(self, package):
 
 		'''
 		get the time stamp of MPEG-TS stream or VOD 
 		'''
-		try:
-			if len(package) != self.TS_PACKET_SIZE:
-				#print 1111
-				return
-			
-			if ord(package[0]) != self.TS_SYNC_BYTE:
-				#print 2222
-				return
-			
+		try:	
 			#If this packet doesn't contain a PCR, then we're not interested in it:
 			adaptation_field_control = (ord(package[3]) & 0x30) >> 4
 			#print adaptation_field_control
 			if (adaptation_field_control != 2 and adaptation_field_control != 3):
-				#print 3333
 				return 
 			# // there's no adaptation_field  
 			adaptation_field_length = package[4]
 			if (adaptation_field_length == 0):
-				#print 4444
 				return
 			
 			#no PCR
 			pcr_flag = ord(package[5]) & 0x10
 			if (pcr_flag == 0):
-				#print 5555
 				return
 			
 			#yes, we get a pcr 

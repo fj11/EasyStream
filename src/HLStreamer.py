@@ -51,7 +51,7 @@ class HLStreamer():
             segment_file.write(content)
             return 1
         except IOError, e:
-            print e
+            print "Open segment %s Error: %s" % (name, e)
             return 0
         finally:
             if segment_file:
@@ -102,7 +102,7 @@ class HLStreamer():
             m3u8_file.write(self.__buffer)
             return 1
         except IOError, e:
-            print e
+            print "Open %s m3u8 Error: %s" % (name, e)
             return 0
         finally:
             self.__buffer = ""
@@ -117,7 +117,7 @@ class HLStreamer():
             seged.write("")
             seged.close()
         except IOError, e:
-            print e
+            print "Open old Error: %s" % (e)
         finally:
             if seged:
                 seged.close()
@@ -130,7 +130,7 @@ class VOD():
         self.tsParser_object = BASIC.tsparser
 
     def vod2hls(self, filename):
-        print BASIC.time.ctime(BASIC.time.time())
+        #print BASIC.time.ctime(BASIC.time.time())
         start_time = 0
         end_time = 0
         timer = 0
@@ -139,8 +139,6 @@ class VOD():
         seg_number = 1
         vod_length = list()
         STREAMER = HLStreamer()
-        if not STREAMER.isNewStream(BASIC.os.path.split(filename)[-1].split(".")[0]):
-            return
         STREAMER.getM3U()
         STREAMER.getVERSION()
         STREAMER.getTARGETDURATION()
@@ -149,6 +147,10 @@ class VOD():
         STREAMER.getKEY()
         file_object = self.openVOD("%s" % (filename))
         sec = file_object.read(188)
+        if not self.tsParser_object.isTsPackage(sec):
+            return
+        if not STREAMER.isNewStream(BASIC.os.path.split(filename)[-1].split(".")[0]):
+            return
         while len(sec) == 188:
             segpackage += 1
             #print 1111
@@ -174,18 +176,19 @@ class VOD():
         #print vod_length
         for length in range(len(vod_length)):
             seg = length + 1
-            genseg = BASIC.threading.Thread(target=STREAMER.genSeg,
-                                      args=("%s.ts" % seg, file_object.read(vod_length[length])))
-            genseg.start()
+            STREAMER.genSeg("%s.ts" % seg, file_object.read(vod_length[length]))
+##            genseg = BASIC.threading.Thread(target=STREAMER.genSeg,
+##                                      args=("%s.ts" % seg, file_object.read(vod_length[length])))
+##            genseg.start()
         file_object.close()
         STREAMER.genFinish()
-        print BASIC.time.ctime(BASIC.time.time())
+        #print BASIC.time.ctime(BASIC.time.time())
     
     def openVOD(self, name):
         try:
             return open(name, "rb")
         except IOError, e:
-            print e
+            print "Open VOD %s Error: %s" % (name, e)
             return None
 
     def start(self):
@@ -194,9 +197,10 @@ class VOD():
         for i in BASIC.os.listdir(BASIC.VODROOT):
             filepath = "%s/%s"% (BASIC.VODROOT, i)
             #print filepath
-            vod2hls = BASIC.threading.Thread(target=self.vod2hls,
-                             args=(filepath,))
-            vod2hls.start()
+            self.vod2hls(filepath)
+##            vod2hls = BASIC.threading.Thread(target=self.vod2hls,
+##                             args=(filepath,))
+##            vod2hls.start()
 
 class LIVE():
 
@@ -223,6 +227,7 @@ class LIVE():
         duration = 0
         seg_number = 1
         save_segment = True
+        segment_file = None
         streamname = parsed_url.path.split("/")[-1].split(".")[0]
         
         self.STREAMER.isNewStream(streamname, "live")
@@ -230,9 +235,11 @@ class LIVE():
             message, address = udp_unicast_server.recvfrom(188)
             if address[0] != parsed_url.hostname:
                 return
+            if not BASIC.tsparser.isTsPackage(message):
+                return
             while len(message) == 188:
                 if save_segment:
-                    print "creating %s.ts" % seg_number
+                    #print "creating %s.ts" % seg_number
                     segment_file = self.STREAMER.openSeg("%s.ts" % seg_number)
                     save_segment = False
                 segment_file.write(message)
@@ -258,14 +265,18 @@ class LIVE():
                     seg_number += 1
                 message, address = udp_unicast_server.recvfrom(188)
         except BASIC.socket.timeout, e:
-            print e
+            print "Connecting %s session timeout" % url
         except Exception, e:
-            print e
+            print "%s" % e
         finally:
+            if save_segment and segment_file:
+                segment_file.close()
             self._genM3U8(streamname, seg_info_list, end_list=1)
                 
     def _genM3U8(self, streamname, seg_info_list, end_list=0):
 
+        if not seg_info_list:
+            return
         self.STREAMER.getM3U()
         self.STREAMER.getVERSION()
         self.STREAMER.getTARGETDURATION()
