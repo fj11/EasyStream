@@ -9,6 +9,7 @@ import TsParser
 import threading
 import socket
 import time
+import urlparse
 import os
 
 class Basic(object):
@@ -26,13 +27,14 @@ class Basic(object):
         self.socket = socket
         self.tsparser = TsParser.TSParser()
         self.threading = threading
+        self.urlparse = urlparse
         
     def log(self):
         
-        logger = logging.getLogger("simple_example")  
-        logger.setLevel(logging.DEBUG)  
+        self.logger = logging.getLogger("easystream")  
+        self.logger.setLevel(logging.DEBUG)  
         # create file handler which logs even debug messages  
-        fh = logging.FileHandler("spam.log")  
+        fh = logging.FileHandler("log/easystream.log")  
         fh.setLevel(logging.DEBUG)  
         # create console handler with a higher log level  
         ch = logging.StreamHandler()  
@@ -42,14 +44,9 @@ class Basic(object):
         ch.setFormatter(formatter)  
         fh.setFormatter(formatter)  
         # add the handlers to logger  
-        logger.addHandler(ch)  
-        logger.addHandler(fh)  
-        # "application" code  
-        logger.debug("debug message")  
-        logger.info("info message")  
-        logger.warn("warn message")  
-        logger.error("error message")  
-        logger.critical("critical message") 
+        self.logger.addHandler(ch)  
+        self.logger.addHandler(fh)  
+        # "application" code
 
     def live(self):
         import SocketServer
@@ -60,5 +57,5 @@ class Basic(object):
         self.SEGMENT_NUMBER = 3 
         self.EXT_X_VERSION = 3
         self.EXT_X_TARGETDURATION = 10
-        self.HTTPROOT = "../httproot"
-        self.VODROOT = "../vod"
+        self.HTTPROOT = "httproot"
+        self.VODROOT = "vod"

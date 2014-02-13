@@ -105,6 +105,7 @@ class HLStreamer():
             print e
             return 0
         finally:
+            self.__buffer = ""
             if m3u8_file:
                 m3u8_file.close()
 
@@ -120,7 +121,6 @@ class HLStreamer():
         finally:
             if seged:
                 seged.close()
-
 
 class VOD():
     
@@ -204,12 +204,15 @@ class LIVE():
 
         self.STREAMER = HLStreamer()
 
-    def reciveUnicastUDP(self, streamname, port):
+    def reciveUnicastUDP(self, url):
 
         BASIC.live()
         BASIC.hls()
+        parsed_url = BASIC.urlparse.urlsplit(url)
+        if parsed_url.scheme.lower() != "udp":
+            return
         udp_unicast_server = BASIC.socketserver.UDPUnicastServer()
-        udp_unicast_server.bind(("", port))
+        udp_unicast_server.bind(("", parsed_url.port))
         udp_unicast_server.settimeout(60)
 
         seg_info_list = list()
@@ -220,10 +223,13 @@ class LIVE():
         duration = 0
         seg_number = 1
         save_segment = True
-
-        self.STREAMER.isNewStream(streamname.split("/")[-1].split(".")[0], "live")
+        streamname = parsed_url.path.split("/")[-1].split(".")[0]
+        
+        self.STREAMER.isNewStream(streamname, "live")
         try: 
             message, address = udp_unicast_server.recvfrom(188)
+            if address[0] != parsed_url.hostname:
+                return
             while len(message) == 188:
                 if save_segment:
                     print "creating %s.ts" % seg_number
@@ -248,7 +254,7 @@ class LIVE():
                     start_time = timer
                     seg_info_list.append((duration, "%s.ts" % seg_number))
                     if len(seg_info_list) == BASIC.SEGMENT_NUMBER:
-                        self.genM3U8(streamname, seg_info_list)
+                        self._genM3U8(streamname, seg_info_list)
                     seg_number += 1
                 message, address = udp_unicast_server.recvfrom(188)
         except BASIC.socket.timeout, e:
@@ -256,15 +262,15 @@ class LIVE():
         except Exception, e:
             print e
         finally:
-            self.genM3U8(streamname, seg_info_list, end_list=1)
+            self._genM3U8(streamname, seg_info_list, end_list=1)
                 
-    def genM3U8(self, streamname, seg_info_list, end_list=0):
+    def _genM3U8(self, streamname, seg_info_list, end_list=0):
 
         self.STREAMER.getM3U()
         self.STREAMER.getVERSION()
         self.STREAMER.getTARGETDURATION()
         self.STREAMER.getPLAYLISTTYPE("live")
-        self.STREAMER.getMEDIASEQUENCE("1")
+        self.STREAMER.getMEDIASEQUENCE(seg_info_list[0][-1].split(".")[0])
         self.STREAMER.getKEY()
         for i in seg_info_list:
             self.STREAMER.getINF(float(i[0]), i[1])
@@ -280,6 +286,6 @@ if __name__ == "__main__":
     #VODStreamer = VOD()
     #VODStreamer.start()
     LIVEStreamer = LIVE()
-    LIVEStreamer.reciveUnicastUDP("fe.ts", 12345)
+    LIVEStreamer.reciveUnicastUDP("udp://192.168.36.231:12345/fe.ts")
 
 
